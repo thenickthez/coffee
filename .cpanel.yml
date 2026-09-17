@@ -1,7 +1,7 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/ngdev/public_html/coffee/
+    - export DEPLOYPATH=/home/beaboutit/public_html/coffee-ordering/
     - /bin/cp index.php $DEPLOYPATH
     - /bin/cp -R assets $DEPLOYPATH
     - /bin/cp -R api $DEPLOYPATH
