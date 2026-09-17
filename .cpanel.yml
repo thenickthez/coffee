@@ -1,0 +1,10 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/beaboutit/public_html/coffee-ordering/
+    - /bin/cp index.php $DEPLOYPATH
+    - /bin/cp -R assets $DEPLOYPATH
+    - /bin/cp -R api $DEPLOYPATH
+    - /bin/cp -R admin $DEPLOYPATH
+    - /bin/cp -R kitchen $DEPLOYPATH
+    - /bin/cp -R config/database.example.php $DEPLOYPATH/config/
