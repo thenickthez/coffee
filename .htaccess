@@ -1,0 +1,10 @@
+DirectoryIndex index.php
+
+Options -Indexes
+
+RewriteEngine On
+
+# Allow files and directories in this application to load normally
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
