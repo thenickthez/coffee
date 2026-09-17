@@ -1316,3 +1316,75 @@ label {
         scroll-margin-top:74px
     }
 }
+
+
+/* Special requests / order notes */
+.order-notes-field {
+    margin:0 0 16px;
+}
+
+.order-notes-field label {
+    display:block;
+    margin-bottom:7px;
+    color:#fff;
+    font-weight:700;
+}
+
+.order-notes-field label span {
+    color:#aaa;
+    font-weight:400;
+}
+
+.order-notes-field textarea {
+    width:100%;
+    min-height:84px;
+    padding:14px;
+    background:#fff;
+    color:#000;
+    border:1px solid #fff;
+    border-radius:0;
+    font:inherit;
+    resize:vertical;
+    box-sizing:border-box;
+}
+
+.order-notes-field textarea::placeholder {
+    color:#777;
+}
+
+.review-notes {
+    margin:0 0 18px;
+    padding:14px;
+    background:#f4f4f4;
+    border-left:4px solid var(--yellow);
+}
+
+.review-notes strong {
+    display:block;
+    margin-bottom:5px;
+}
+
+.review-notes p {
+    margin:0;
+    white-space:pre-wrap;
+}
+
+.order-notes {
+    margin:12px 0;
+    padding:10px;
+    background:#f4f4f4;
+    border-left:4px solid var(--yellow);
+    color:#111;
+}
+
+.order-notes strong {
+    display:block;
+    margin-bottom:4px;
+    font-size:12px;
+    text-transform:uppercase;
+}
+
+.notes-cell {
+    min-width:180px;
+    white-space:normal;
+}

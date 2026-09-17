@@ -13,14 +13,15 @@ async function load(){
  const doneOrders=d.orders.filter(o=>o.status==='done');document.getElementById('done-count').textContent=`(${doneOrders.length})`;
  d.orders.forEach(o=>{
    const target=document.getElementById(o.status);if(!target)return;
+   const notes=o.notes?`<div class="order-notes"><strong>Special Requests</strong><div>${esc(o.notes)}</div></div>`:'';
    const items=o.items.map(i=>`<div class="order-item"><strong>${esc(i.quantity)}x ${esc(i.drink_name)}</strong><div class="milk">${esc(i.milk_type||'')}</div><div class="item-price">${money(Number(i.price)*Number(i.quantity))}</div></div>`).join('');
    if(o.status==='done'){
      const el=document.createElement('details');el.className='order-card done-card';
-     el.innerHTML=`<summary><span><strong>#${esc(o.order_number)} · ${esc(o.customer_name||'No name')}</strong><small>${itemCount(o.items)} item${itemCount(o.items)===1?'':'s'} · ${time(o.updated_at||o.created_at)}</small></span><b>${money(o.total)}</b></summary><div class="done-details">${items}<div class="order-total">Total ${money(o.total)}</div></div>`;
+     el.innerHTML=`<summary><span><strong>#${esc(o.order_number)} · ${esc(o.customer_name||'No name')}</strong><small>${itemCount(o.items)} item${itemCount(o.items)===1?'':'s'} · ${time(o.updated_at||o.created_at)}</small></span><b>${money(o.total)}</b></summary><div class="done-details">${items}${notes}<div class="order-total">Total ${money(o.total)}</div></div>`;
      target.appendChild(el);return;
    }
    const el=document.createElement('article');el.className='order-card';const next=o.status==='ordered'?'making':'done';const label=o.status==='ordered'?'START MAKING':'MARK DONE';
-   el.innerHTML=`<div class="order-top"><div><div class="order-num">#${esc(o.order_number)}</div><div class="order-name">${esc(o.customer_name||'No name')}</div></div><div class="order-time">${time(o.created_at)}</div></div>${items}<div class="order-total">${money(o.total)}</div><button class="btn btn-yellow" style="width:100%" onclick="setStatus(${Number(o.id)},'${next}')">${label}</button>`;target.appendChild(el);
+   el.innerHTML=`<div class="order-top"><div><div class="order-num">#${esc(o.order_number)}</div><div class="order-name">${esc(o.customer_name||'No name')}</div></div><div class="order-time">${time(o.created_at)}</div></div>${items}${notes}<div class="order-total">${money(o.total)}</div><button class="btn btn-yellow" style="width:100%" onclick="setStatus(${Number(o.id)},'${next}')">${label}</button>`;target.appendChild(el);
  });
 }
 async function setStatus(id,status){await fetch('../api/status.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});load()}

@@ -91,6 +91,10 @@ $milkTypes = db()->query("SELECT id, name FROM milk_types WHERE active = 1 ORDER
                     <label for="customerName">Name for Order</label>
                     <input type="text" id="customerName" maxlength="100" autocomplete="name" placeholder="Enter your name">
                 </div>
+                <div class="order-notes-field">
+                    <label for="orderNotes">Special Requests <span>(optional)</span></label>
+                    <textarea id="orderNotes" maxlength="500" rows="3" placeholder="Any special requests or notes for your order"></textarea>
+                </div>
                 <button type="button" id="confirmOrder" class="btn btn-yellow place-order" disabled>Confirm Order</button>
                 <div id="orderError" class="order-error" role="alert"></div>
             </div>
@@ -231,10 +235,20 @@ document.getElementById('confirmOrder').addEventListener('click', () => {
     if (!cart.length) return;
     if (!name) { error.textContent = 'Please enter your name.'; document.getElementById('customerName').focus(); return; }
     document.getElementById('reviewName').textContent = name + "'s Order";
+    const notes = document.getElementById('orderNotes').value.trim();
     document.getElementById('reviewItems').innerHTML = cart.map(item => `
         <div class="review-line"><span><strong>${item.quantity}× ${escapeHtml(item.drink_name)}</strong>${item.milk_name ? `<small>${escapeHtml(item.milk_name)}</small>` : ''}</span><b>${money(item.price * item.quantity)}</b></div>
     `).join('');
     document.getElementById('reviewTotal').textContent = money(cart.reduce((sum,item)=>sum+item.price*item.quantity,0));
+    const existingNotes = document.getElementById('reviewNotes');
+    if (existingNotes) existingNotes.remove();
+    if (notes) {
+        const notesEl = document.createElement('div');
+        notesEl.id = 'reviewNotes';
+        notesEl.className = 'review-notes';
+        notesEl.innerHTML = `<strong>Special Requests</strong><p>${escapeHtml(notes)}</p>`;
+        document.getElementById('reviewItems').after(notesEl);
+    }
     document.getElementById('reviewOrder').hidden = false;
 });
 
@@ -243,20 +257,21 @@ document.getElementById('backToOrder').addEventListener('click', () => { documen
 document.getElementById('placeOrder').addEventListener('click', async () => {
     if (!cart.length) return;
     const name = document.getElementById('customerName').value.trim();
+    const notes = document.getElementById('orderNotes').value.trim();
     const button = document.getElementById('placeOrder');
     const error = document.getElementById('reviewError');
     error.textContent = ''; button.disabled = true; button.textContent = 'Sending Order...';
     try {
         const response = await fetch('api/orders.php', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({customer_name: name, items: cart.map(item => ({drink_id:item.drink_id,milk_type_id:item.milk_type_id,quantity:item.quantity}))})
+            body: JSON.stringify({customer_name: name, notes: notes, items: cart.map(item => ({drink_id:item.drink_id,milk_type_id:item.milk_type_id,quantity:item.quantity}))})
         });
         const data = await response.json();
         if (!response.ok || !data.success) throw new Error(data.error || 'Could not place order.');
         document.getElementById('reviewOrder').hidden = true;
         document.getElementById('confirmationNumber').textContent = '#' + data.order_number;
         document.getElementById('confirmation').hidden = false;
-        cart = []; document.getElementById('customerName').value = ''; renderCart();
+        cart = []; document.getElementById('customerName').value = ''; document.getElementById('orderNotes').value = ''; renderCart();
     } catch (err) { error.textContent = err.message || 'Could not place order. Please try again.'; }
     finally { button.textContent = 'Place Order'; button.disabled = false; }
 });

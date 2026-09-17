@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $data = json_decode(file_get_contents('php://input'), true);
 $items = is_array($data) ? ($data['items'] ?? []) : [];
 $customerName = trim((string)($data['customer_name'] ?? ''));
+$notes = trim((string)($data['notes'] ?? ''));
+if (mb_strlen($notes) > 500) respond(['success' => false, 'error' => 'Special requests must be 500 characters or less.'], 400);
 if ($customerName === '' || mb_strlen($customerName) > 100) respond(['success' => false, 'error' => 'Please enter your name.'], 400);
 if (!is_array($items) || !$items) respond(['success' => false, 'error' => 'Order is empty.'], 400);
 
@@ -59,7 +61,7 @@ foreach ($items as $item) {
 $pdo->beginTransaction();
 try {
     $last=$pdo->query("SELECT order_number FROM orders ORDER BY order_number DESC LIMIT 1 FOR UPDATE")->fetchColumn();$next=$last?((int)$last+1):1001;
-    $stmt=$pdo->prepare("INSERT INTO orders (order_number,customer_name,total) VALUES (?,?,?)");$stmt->execute([$next,$customerName,round($total,2)]);$orderId=(int)$pdo->lastInsertId();
+    $stmt=$pdo->prepare("INSERT INTO orders (order_number,customer_name,notes,total) VALUES (?,?,?,?)");$stmt->execute([$next,$customerName,$notes !== '' ? $notes : null,round($total,2)]);$orderId=(int)$pdo->lastInsertId();
     $itemInsert=$pdo->prepare("INSERT INTO order_items (order_id,drink_id,drink_name,milk_type,price,quantity) VALUES (?,?,?,?,?,?)");
     foreach($validatedItems as $item){$itemInsert->execute([$orderId,$item['drink_id'],$item['drink_name'],$item['milk_type'],$item['price'],$item['quantity']]);}
     $pdo->commit();respond(['success'=>true,'order_number'=>$next]);
