@@ -17,6 +17,10 @@ $milkTypes = db()->query("SELECT id, name FROM milk_types WHERE active = 1 ORDER
     <div class="container nav">
         <div class="logo">COFFEE<span>ORDER</span></div>
         <div class="header-note">Fresh coffee. Made for you.</div>
+        <button type="button" class="mobile-cart" id="mobileCart" aria-label="Checkout">
+            <span class="mobile-cart-label">CHECKOUT:</span>
+            <strong id="mobileCartTotal">$0.00</strong>
+        </button>
     </div>
 </header>
 
@@ -176,6 +180,8 @@ function renderCart() {
 
     document.getElementById('cartCount').textContent = count;
     document.getElementById('cartTotal').textContent = money(total);
+    document.getElementById('mobileCartTotal').textContent = money(total);
+    document.getElementById('mobileCart').classList.toggle('has-items', count > 0);
     emptyEl.style.display = cart.length ? 'none' : 'flex';
     button.disabled = !cart.length || !document.getElementById('customerName').value.trim();
 
@@ -213,6 +219,10 @@ document.querySelectorAll('.add-to-order').forEach(button => {
 });
 
 document.getElementById('customerName').addEventListener('input', renderCart);
+
+document.getElementById('mobileCart').addEventListener('click', () => {
+    document.getElementById('orderPanel').scrollIntoView({behavior: 'smooth', block: 'start'});
+});
 
 document.getElementById('confirmOrder').addEventListener('click', () => {
     const name = document.getElementById('customerName').value.trim();
