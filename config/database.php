@@ -3,9 +3,9 @@
 // database.php is excluded from Git.
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'ngdev_coffee2');
-define('DB_USER', 'ngdev_coffee_usr2');
-define('DB_PASS', '.;RH_ytm&3uVkJWY');
+define('DB_NAME', 'coffee_orders');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 
 function db(): PDO {
     static $pdo = null;
