@@ -83,12 +83,30 @@ $milkTypes = db()->query("SELECT id, name FROM milk_types WHERE active = 1 ORDER
                     <span>Total</span>
                     <strong id="cartTotal">$0.00</strong>
                 </div>
-                <button type="button" id="placeOrder" class="btn btn-yellow place-order" disabled>Place Order</button>
+                <div class="customer-name-field">
+                    <label for="customerName">Name for Order</label>
+                    <input type="text" id="customerName" maxlength="100" autocomplete="name" placeholder="Enter your name">
+                </div>
+                <button type="button" id="confirmOrder" class="btn btn-yellow place-order" disabled>Confirm Order</button>
                 <div id="orderError" class="order-error" role="alert"></div>
             </div>
         </aside>
     </section>
 </main>
+
+<div class="confirmation-overlay" id="reviewOrder" hidden>
+    <div class="confirmation-card review-card">
+        <span class="eyebrow">Confirm Order</span>
+        <h2 id="reviewName">Your Order</h2>
+        <div id="reviewItems" class="review-items"></div>
+        <div class="review-total"><span>Total</span><strong id="reviewTotal">$0.00</strong></div>
+        <div class="review-actions">
+            <button type="button" class="btn btn-light" id="backToOrder">Go Back</button>
+            <button type="button" class="btn btn-yellow" id="placeOrder">Place Order</button>
+        </div>
+        <div id="reviewError" class="order-error" role="alert"></div>
+    </div>
+</div>
 
 <div class="confirmation-overlay" id="confirmation" hidden>
     <div class="confirmation-card">
@@ -152,14 +170,14 @@ function removeItem(index) {
 function renderCart() {
     const itemsEl = document.getElementById('cartItems');
     const emptyEl = document.getElementById('cartEmpty');
-    const button = document.getElementById('placeOrder');
+    const button = document.getElementById('confirmOrder');
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     document.getElementById('cartCount').textContent = count;
     document.getElementById('cartTotal').textContent = money(total);
     emptyEl.style.display = cart.length ? 'none' : 'flex';
-    button.disabled = !cart.length;
+    button.disabled = !cart.length || !document.getElementById('customerName').value.trim();
 
     itemsEl.innerHTML = cart.map((item, index) => `
         <div class="cart-line">
@@ -194,39 +212,43 @@ document.querySelectorAll('.add-to-order').forEach(button => {
     });
 });
 
-document.getElementById('placeOrder').addEventListener('click', async () => {
-    if (!cart.length) return;
-    const button = document.getElementById('placeOrder');
+document.getElementById('customerName').addEventListener('input', renderCart);
+
+document.getElementById('confirmOrder').addEventListener('click', () => {
+    const name = document.getElementById('customerName').value.trim();
     const error = document.getElementById('orderError');
     error.textContent = '';
-    button.disabled = true;
-    button.textContent = 'Sending Order...';
+    if (!cart.length) return;
+    if (!name) { error.textContent = 'Please enter your name.'; document.getElementById('customerName').focus(); return; }
+    document.getElementById('reviewName').textContent = name + "'s Order";
+    document.getElementById('reviewItems').innerHTML = cart.map(item => `
+        <div class="review-line"><span><strong>${item.quantity}× ${escapeHtml(item.drink_name)}</strong>${item.milk_name ? `<small>${escapeHtml(item.milk_name)}</small>` : ''}</span><b>${money(item.price * item.quantity)}</b></div>
+    `).join('');
+    document.getElementById('reviewTotal').textContent = money(cart.reduce((sum,item)=>sum+item.price*item.quantity,0));
+    document.getElementById('reviewOrder').hidden = false;
+});
 
+document.getElementById('backToOrder').addEventListener('click', () => { document.getElementById('reviewOrder').hidden = true; });
+
+document.getElementById('placeOrder').addEventListener('click', async () => {
+    if (!cart.length) return;
+    const name = document.getElementById('customerName').value.trim();
+    const button = document.getElementById('placeOrder');
+    const error = document.getElementById('reviewError');
+    error.textContent = ''; button.disabled = true; button.textContent = 'Sending Order...';
     try {
         const response = await fetch('api/orders.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                items: cart.map(item => ({
-                    drink_id: item.drink_id,
-                    milk_type_id: item.milk_type_id,
-                    quantity: item.quantity
-                }))
-            })
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({customer_name: name, items: cart.map(item => ({drink_id:item.drink_id,milk_type_id:item.milk_type_id,quantity:item.quantity}))})
         });
         const data = await response.json();
         if (!response.ok || !data.success) throw new Error(data.error || 'Could not place order.');
-
+        document.getElementById('reviewOrder').hidden = true;
         document.getElementById('confirmationNumber').textContent = '#' + data.order_number;
         document.getElementById('confirmation').hidden = false;
-        cart = [];
-        renderCart();
-    } catch (err) {
-        error.textContent = err.message || 'Could not place order. Please try again.';
-    } finally {
-        button.textContent = 'Place Order';
-        button.disabled = !cart.length;
-    }
+        cart = []; document.getElementById('customerName').value = ''; renderCart();
+    } catch (err) { error.textContent = err.message || 'Could not place order. Please try again.'; }
+    finally { button.textContent = 'Place Order'; button.disabled = false; }
 });
 
 document.getElementById('newOrder').addEventListener('click', () => {
