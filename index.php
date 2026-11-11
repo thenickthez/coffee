@@ -58,6 +58,14 @@ $milkTypes = db()->query("SELECT id, name FROM milk_types WHERE active = 1 ORDER
                                 </div>
                             <?php endif; ?>
 
+                            <div class="drink-option">
+                                <label for="temperature-<?= (int)$drink['id'] ?>">Serve</label>
+                                <select id="temperature-<?= (int)$drink['id'] ?>" class="temperature-select">
+                                    <option value="hot">Hot</option>
+                                    <option value="cold">Cold / Iced</option>
+                                </select>
+                            </div>
+
                             <button type="button" class="btn btn-yellow add-to-order" data-drink-id="<?= (int)$drink['id'] ?>">
                                 Add to Order
                             </button>
@@ -142,12 +150,12 @@ let cart = [];
 const money = value => '$' + Number(value).toFixed(2);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 
-function addToOrder(drinkId, milkId) {
+function addToOrder(drinkId, milkId, temperature) {
     const drink = drinks.find(d => d.id === drinkId);
     const milk = milkTypes.find(m => m.id === milkId) || null;
     if (!drink) return;
 
-    const existing = cart.find(item => item.drink_id === drinkId && item.milk_type_id === (milk ? milk.id : null));
+    const existing = cart.find(item => item.drink_id === drinkId && item.milk_type_id === (milk ? milk.id : null) && item.temperature === temperature);
     if (existing) {
         existing.quantity++;
     } else {
@@ -157,6 +165,7 @@ function addToOrder(drinkId, milkId) {
             price: drink.price,
             milk_type_id: milk ? milk.id : null,
             milk_name: milk ? milk.name : '',
+            temperature: temperature,
             quantity: 1
         });
     }
@@ -193,6 +202,7 @@ function renderCart() {
         <div class="cart-line">
             <div class="cart-line-info">
                 <strong>${escapeHtml(item.drink_name)}</strong>
+                <span>${item.temperature === 'cold' ? 'Cold / Iced' : 'Hot'}</span>
                 ${item.milk_name ? `<span>${escapeHtml(item.milk_name)}</span>` : ''}
                 <button type="button" class="remove-item" onclick="removeItem(${index})">Remove</button>
             </div>
@@ -214,7 +224,8 @@ document.querySelectorAll('.add-to-order').forEach(button => {
         const card = button.closest('.drink-card');
         const select = card.querySelector('.milk-select');
         const milkId = select ? Number(select.value) : null;
-        addToOrder(drinkId, milkId);
+        const temperature = card.querySelector('.temperature-select').value;
+        addToOrder(drinkId, milkId, temperature);
 
         const original = button.textContent;
         button.textContent = 'Added ✓';
@@ -237,7 +248,7 @@ document.getElementById('confirmOrder').addEventListener('click', () => {
     document.getElementById('reviewName').textContent = name + "'s Order";
     const notes = document.getElementById('orderNotes').value.trim();
     document.getElementById('reviewItems').innerHTML = cart.map(item => `
-        <div class="review-line"><span><strong>${item.quantity}× ${escapeHtml(item.drink_name)}</strong>${item.milk_name ? `<small>${escapeHtml(item.milk_name)}</small>` : ''}</span><b>${money(item.price * item.quantity)}</b></div>
+        <div class="review-line"><span><strong>${item.quantity}× ${escapeHtml(item.drink_name)}</strong><small>${item.temperature === 'cold' ? 'Cold / Iced' : 'Hot'}</small>${item.milk_name ? `<small>${escapeHtml(item.milk_name)}</small>` : ''}</span><b>${money(item.price * item.quantity)}</b></div>
     `).join('');
     document.getElementById('reviewTotal').textContent = money(cart.reduce((sum,item)=>sum+item.price*item.quantity,0));
     const existingNotes = document.getElementById('reviewNotes');
@@ -264,7 +275,7 @@ document.getElementById('placeOrder').addEventListener('click', async () => {
     try {
         const response = await fetch('api/orders.php', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({customer_name: name, notes: notes, items: cart.map(item => ({drink_id:item.drink_id,milk_type_id:item.milk_type_id,quantity:item.quantity}))})
+            body: JSON.stringify({customer_name: name, notes: notes, items: cart.map(item => ({drink_id:item.drink_id,milk_type_id:item.milk_type_id,temperature:item.temperature,quantity:item.quantity}))})
         });
         const data = await response.json();
         if (!response.ok || !data.success) throw new Error(data.error || 'Could not place order.');

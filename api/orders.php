@@ -49,6 +49,8 @@ $validatedItems = [];$total = 0.0;
 foreach ($items as $item) {
     $drinkId = filter_var($item['drink_id'] ?? null, FILTER_VALIDATE_INT);
     $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
+    $temperature = $item['temperature'] ?? null;
+    if (!in_array($temperature, ['hot', 'cold'], true)) respond(['success'=>false,'error'=>'Choose Hot or Cold for each drink.'],400);
     $milkId = isset($item['milk_type_id']) && $item['milk_type_id'] !== null ? filter_var($item['milk_type_id'], FILTER_VALIDATE_INT) : null;
     if (!$drinkId || !$quantity || $quantity < 1 || $quantity > 25) respond(['success'=>false,'error'=>'One or more order items are invalid.'],400);
     $drinkStmt->execute([$drinkId]);$drink=$drinkStmt->fetch();
@@ -56,13 +58,13 @@ foreach ($items as $item) {
     $milkName=null;
     if($milkId!==null){if(!$milkId) respond(['success'=>false,'error'=>'Invalid milk selection.'],400);$milkStmt->execute([$milkId]);$milk=$milkStmt->fetch();if(!$milk) respond(['success'=>false,'error'=>'A selected milk option is no longer available.'],400);$milkName=$milk['name'];}
     $price=(float)$drink['price'];$total+=$price*$quantity;
-    $validatedItems[]=['drink_id'=>(int)$drink['id'],'drink_name'=>$drink['name'],'milk_type'=>$milkName,'price'=>$price,'quantity'=>$quantity];
+    $validatedItems[]=['drink_id'=>(int)$drink['id'],'drink_name'=>$drink['name'],'milk_type'=>$milkName,'price'=>$price,'quantity'=>$quantity,'temperature'=>$temperature];
 }
 $pdo->beginTransaction();
 try {
     $last=$pdo->query("SELECT order_number FROM orders ORDER BY order_number DESC LIMIT 1 FOR UPDATE")->fetchColumn();$next=$last?((int)$last+1):1001;
     $stmt=$pdo->prepare("INSERT INTO orders (order_number,customer_name,notes,total) VALUES (?,?,?,?)");$stmt->execute([$next,$customerName,$notes !== '' ? $notes : null,round($total,2)]);$orderId=(int)$pdo->lastInsertId();
-    $itemInsert=$pdo->prepare("INSERT INTO order_items (order_id,drink_id,drink_name,milk_type,price,quantity) VALUES (?,?,?,?,?,?)");
-    foreach($validatedItems as $item){$itemInsert->execute([$orderId,$item['drink_id'],$item['drink_name'],$item['milk_type'],$item['price'],$item['quantity']]);}
+    $itemInsert=$pdo->prepare("INSERT INTO order_items (order_id,drink_id,drink_name,milk_type,temperature,price,quantity) VALUES (?,?,?,?,?,?,?)");
+    foreach($validatedItems as $item){$itemInsert->execute([$orderId,$item['drink_id'],$item['drink_name'],$item['milk_type'],$item['temperature'],$item['price'],$item['quantity']]);}
     $pdo->commit();respond(['success'=>true,'order_number'=>$next]);
 } catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();respond(['success'=>false,'error'=>'Could not save the order. Please try again.'],500);}
